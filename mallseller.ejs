@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/bootstrap/css/bootstrap.css' />
+    <link rel='stylesheet' href='/stylesheets/mallpublic.css' />
+    <link rel='stylesheet' href='/stylesheets/mallhead.css' />
+    <link rel='stylesheet' href='/stylesheets/mallsellerlist.css' />  
+  </head>
+  <body>
+    <%- include("./mallhead.ejs",{isshow:isShow,iscast:true,headername:name,isSeller:false,sellername:""})%>
+
+    <div class="main">
+      <div class="margin">
+        <ul id="mainbody" class="clear"></ul>
+      </div>
+    </div>
+    <nav aria-label="Page navigation" class="pagenav" style="text-align:center">
+      <ul class="pagination">
+      </ul>      
+    </nav>
+    <script src="/bootstrap/js/jquery-1.11.0.js" type="text/javascript" charset="utf-8" ></script>
+    <script src="/bootstrap/js/bootstrap.js" type="text/javascript" charset="utf-8"></script>
+    <script>
+
+        $(".nav").find("ul").find("li").find("a").on("click",function(){
+                  var $text=$(this).text();
+                  window.location.href=`/mallsellerlist?key=${$text}&attr=${""}&type=${""}`                 
+        });
+
+        var key;
+        var attr;
+        var type;
+        if(window.location.search.split("?").length>1){
+          var keyword=window.location.search.split("?")[1].split("&");
+          var keywordlength=window.location.search.split("?")[1].split("&").length;
+          for(var i=0;i<keywordlength;i++){
+            if(keyword[i].split("=")[0]=="key"){
+              key=decodeURIComponent(keyword[i].split("=")[1]);
+            }else if(keyword[i].split("=")[0]=="attr"){
+              attr=decodeURIComponent(keyword[i].split("=")[1]);
+            }else if(keyword[i].split("=")[0]=="type"){
+              type=decodeURIComponent(keyword[i].split("=")[1]);
+            }
+          }
+
+        }
+				function sameajax(key,attr,type,url){
+        $("#mainbody").empty();
+        $(".pagination").empty();
+        $.ajax({
+            url:url,
+            data:{
+                limit:10,offset:0,key:key,type:type
+            },
+            success:(result)=>{
+              console.log(result)
+                renderlist(result.info);
+                renderpage(result.total,key,attr,type);
+                $("#mainbody").find("li").on("click",function(){
+                  var dataid=$(this).attr("dataid");
+                  var sellername=$(this).attr("sellername");
+                  window.location.href=`/malldetail?dataid=${dataid}&sellername=${sellername}`
+                })
+            }
+        });
+        function renderlist(list){
+                var $oLi=""
+                for(var i=0;i<list.length;i++){
+                 $oLi += `<li dataId=${list[i]._id} sellername=${list[i].author}>
+                              <div class="li-header"><img src="${list[i].pathname}"></div>
+                              <div class="li-body">
+                                <h3><span>品名：${list[i].proname}</span><span>价格：${list[i].price}</span></h3>
+                                <h4>${list[i].detail}</h4>  
+                                <p><span>库存：${list[i].num}</span><span>生产日期：${list[i].date}</span></p>
+                                <p><span>店主：${list[i].author}</span></p>
+                              </div>
+                              <div class="li-footer">
+                                  <a class="btn btn-default" href="javascript:;" role="button">查看产品详情</a>
+                              </div>
+                          </li>`
+            }
+            $("#mainbody").html(`${$oLi}`);
+        };
+        function renderpage(page,key,attr,type){
+            for(var i=0;i<page;i+=10){
+                $li = $("<li class="+attr+">").html(`<a>${i/10+1}</a>`);
+                if($li.attr("class")==attr){
+                    $li.click(function(){
+                    $(this).find("a").addClass("red").parents("li").siblings("li").find("a").removeClass("red");
+                    rerenderlist($(this).index(),key,type);
+                })
+                }
+                $(".pagination").append($li);
+            }
+
+        };
+        function rerenderlist(index,key,type){
+            $("#mainbody").empty();
+            $.ajax({
+                url:"/mallsellerlist/relist",
+                data:{limit:10,offset:index*10,key:key,type:type},
+                success:(result)=>{
+                 console.log(result) // 箭头函数解决this 指向
+                renderlist(result.info);
+                $("#mainbody").find("li").on("click",function(){
+                  var dataid=$(this).attr("dataid");
+                  var sellername=$(this).attr("sellername");
+                  window.location.href=`/malldetail?dataid=${dataid}&sellername=${sellername}`
+                })
+                }
+            })
+        }
+      }
+      if(key!="全部产品"){
+        sameajax(key,"kindpage","kindtype","/mallsellerlist/list")
+      }else{
+        sameajax(key,"kindpage","kindtype","/mallsellerlist/relist")
+      }
+
+
+
+      // $(".nav").find("ul").find("li").find("a").on("click",function(){
+      //           var $text=$(this).text();
+      //           sameajax($text,"kindpage","kindtype","/relist")    
+      // });
+        
+      //   $(".dropdown").find(".dropdown-menu").find("li").on("click",function(){
+      //               $(".selected").text($(this).text());
+      //   })
+
+ 
+      //   $(".searchbtn").on("click",function(){
+      //       if($(".selected").text()=="产品名称"){
+      //           sameajax($(".form-control").val(),"productname","proname","/relist")
+      //       }else if($(".selected").text()=="日期"){
+      //           sameajax($(".form-control").val(),"productdate","date","/relist")
+      //       }
+      //   }) 
+      </script>
+  </body>
+</html>
+ 
